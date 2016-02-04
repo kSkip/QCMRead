@@ -8,11 +8,14 @@ useful for automation purposes as the controller can operate deposition shutters
 
 ## Compiling
 
+The QCMRead repository is provided as a self-contained project, requiring only linking the windows development libraries and providing the header files for the Win32 API. A C++ compiler for Windows is required. A Visual Studio 6.0 project file is provided thus making compiling easy if you wish to use Visual C++.  
+
+A binary for QCMRead is also provided. It was compiled on 32bit Windows XP with Visual Studio 6.0.
+
 ## How to use
 #### Prerequisites
-You must have Windows XP, or higher to use QCMRead. You need an availble RS232 port 
-for the datalink to the controller. A crossover RS232 cable is required. Insure the baud rate 
-of the controller is set 9600 (this is the max for this model).
+You must have Windows to use QCMRead. It has only been tested on Windows XP, but should compile on Windows 95 or higher. You need an availble RS232 port for the datalink to the controller. A crossover RS232 cable is required. Insure the baud rate 
+of the controller is set 9600 (this is the max for this model), and the hard coded rate in the source.
 
 #### Starting
 Then upon starting you with be greeted with a dialog prompting 
