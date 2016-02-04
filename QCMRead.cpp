@@ -144,7 +144,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 			hStatic[5] = CreateWindowEx(NULL,"Static","",WS_CHILD | WS_VISIBLE,125,64,100,16,hWnd,(HMENU)IDC_STATIC6,GetModuleHandle(NULL),NULL);
 			hStatic[6] = CreateWindowEx(NULL,"Static","",WS_CHILD | WS_VISIBLE,125,80,100,16,hWnd,(HMENU)IDC_STATIC7,GetModuleHandle(NULL),NULL);
 			hStatic[7] = CreateWindowEx(NULL,"Static","",WS_CHILD | WS_VISIBLE,125,96,100,16,hWnd,(HMENU)IDC_STATIC8,GetModuleHandle(NULL),NULL);
-			SetWindowText(hStatic[0],TEXT("Rate:\nAverage Rate:\nThickness:\nDensity:\nZ-Factor:\nRemaining Life:\nFrequency:\nTime:"));
+			SetWindowText(hStatic[0],TEXT("Rate:\nThickness:\nDensity:\nZ-Factor:\nRemaining Life:\nFrequency:\nTime:"));
 
 			//update timer for the displayed values
 			SetTimer(hWnd,2,500,NULL);
