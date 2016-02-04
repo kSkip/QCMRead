@@ -1,25 +1,47 @@
 # QCMRead
 
-I wrote this program because the display on the STM100 I used in my lab was totally broken, 
-but the controller worked fine otherwise. So I needed to write this code to see the numbers 
-on the display and set certain values in the controller. After writing this program, I 
-noticed that it could be useful for others and should be improved upon. This could be especially 
-useful for automation purposes.
+I wrote this program because the display on the STM100 film deposition controller, that I used in my lab, was broken, 
+but the controller worked fine otherwise. So I wrote this code to see the numbers 
+on the display and set certain values in the controller. After writing it, I 
+decided that it was useful for others and should be improved upon. This could be especially 
+useful for automation purposes as the controller can operate deposition shutters. I plan on future version supporting all the features of these controllers adn related models as well.
 
-How to use:
+## Compiling
 
-You must have Windows xp, or higher to use QCMRead. You need an availble serial com port 
-for connecting the controller. A crossover RS232 cable is required. Insure the baud rate 
-of the controller is set 9600. Then upon starting you with be greeted with a dialog prompting 
-you for the name of the com port (i.e. COM1, COM2, etc.). After you enter this information, 
-the main window will open and you will see several values being displayed. 
-They are updated ever 500ms.
+## How to use
+#### Prerequisites
+You must have Windows XP, or higher to use QCMRead. You need an availble RS232 port 
+for the datalink to the controller. A crossover RS232 cable is required. Insure the baud rate 
+of the controller is set 9600 (this is the max for this model).
+
+#### Starting
+Then upon starting you with be greeted with a dialog prompting 
+you for the name of the com port (i.e. COM1, COM2, etc.).  
+
+![Alt text](https://github.com/kSkip/QCMRead/raw/master/CommSetting.bmp)  
+
+After you enter this information, 
+the main window will open
+
+#### Measuring 
+You will see several values being displayed. They are updated every 500ms. The thickness is an accumulated deposition on the quartz crystal in the vacuum system. This is an accumulation over the time indicated next to time. For some reason the time counts down from 60:00 mins:sec to 00:00 and then back up. This is not a software bug as the controller also reads this value. In any case, pressing the "zero" button on hte controllers zeros the time and thickness. 
 
 You should see:
-Rate  (the time derivative of thickness)
-Thickness (the measured thickness)
-Density (the density set for "current film")
-Z-factor  (the Z-factor set for "current film");
-Remaining Life (the percentage of remaining life of the quartz crystal)
-Frequency (the resonant frequency of the quartz crystal)
-Time  (the time since the thickness was zeroed)
+
+  * Rate           (time derivative of thickness)
+  * Thickness      (measured thickness)
+  * Density        (density set for "current film")
+  * Z-factor       (Z-factor set for "current film")
+  * Remaining Life (percentage of remaining life of the quartz crystal)
+  * Frequency      (resonant frequency of the quartz crystal)
+  * Time           (time since the thickness was zeroed)
+
+The main window is shown below.  
+
+![Alt text](https://github.com/kSkip/QCMRead/raw/master/MainWindow.bmp)  
+
+#### Film Properties
+
+To change the density and z-factor of the current film, go to Settings->Film Properties
+
+![Alt text](https://github.com/kSkip/QCMRead/raw/master/FilmProperties.bmp)  
