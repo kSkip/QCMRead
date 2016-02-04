@@ -101,6 +101,10 @@ SOURCE=.\QCMRead.rc
 SOURCE=.\StdAfx.cpp
 # ADD CPP /Yc"stdafx.h"
 # End Source File
+# Begin Source File
+
+SOURCE=.\stm100.cpp
+# End Source File
 # End Group
 # Begin Group "Header Files"
 
@@ -117,6 +121,10 @@ SOURCE=.\resource.h
 
 SOURCE=.\StdAfx.h
 # End Source File
+# Begin Source File
+
+SOURCE=.\stm100.h
+# End Source File
 # End Group
 # Begin Group "Resource Files"
 
@@ -130,9 +138,5 @@ SOURCE=.\QCMRead.ico
 SOURCE=.\small.ico
 # End Source File
 # End Group
-# Begin Source File
-
-SOURCE=.\ReadMe.txt
-# End Source File
 # End Target
 # End Project

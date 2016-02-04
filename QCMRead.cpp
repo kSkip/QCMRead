@@ -11,11 +11,20 @@
 #define IDC_STATIC6 205
 #define IDC_STATIC7 206
 #define IDC_STATIC8 207
+#define IDC_STATIC9 208
 
 // Global Variables:
 HINSTANCE hInst;								// current instance
 TCHAR szTitle[MAX_LOADSTRING];					// The title bar text
 TCHAR szWindowClass[MAX_LOADSTRING];			// The main window class name
+
+TCHAR m_pszPortName[5] = {"COM1"}; //default value to fill edit box upon start
+
+stm100 controller; //The stm100 deposition controller object
+
+//handles to the main window and the static child windows
+HWND hwnd;
+HWND hStatic[9];
 
 // Foward declarations of functions included in this code module:
 ATOM				MyRegisterClass(HINSTANCE hInstance);
@@ -24,22 +33,7 @@ LRESULT CALLBACK	WndProc(HWND, UINT, WPARAM, LPARAM);
 LRESULT CALLBACK	About(HWND, UINT, WPARAM, LPARAM);
 LRESULT CALLBACK	FilmProp(HWND, UINT, WPARAM, LPARAM);
 LRESULT CALLBACK	CommSet(HWND, UINT, WPARAM, LPARAM);
-
-// Some more global variables
-TCHAR m_pszPortName[5];
-HANDLE m_hSerialComm;
-HANDLE hThread;
-DWORD dwThreadId;
-DWORD WINAPI pollCOM(LPVOID lpParam);
-float rate, thickness, life, density, zfactor;
-float newdensity, newzfactor;
-int timemin, timesec, freq;
-bool setdensityready = false;
-bool setzfactorready = false;
-
-//window handles to the main window and the static child windows for the process values
-HWND hwnd;
-HWND hStatic[8];
+LRESULT CALLBACK    Options(HWND, UINT, WPARAM, LPARAM);
 
 int APIENTRY WinMain(HINSTANCE hInstance,
                      HINSTANCE hPrevInstance,
@@ -109,7 +103,7 @@ BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
 	   return FALSE;
    }
 
-   hWnd = CreateWindow(szWindowClass, szTitle, WS_OVERLAPPEDWINDOW,
+   hWnd = CreateWindow(szWindowClass, szTitle, WS_OVERLAPPEDWINDOW^WS_THICKFRAME,
       100, 100, 225, 175, NULL, NULL, hInstance, NULL);
 
    hwnd = hWnd;
@@ -138,27 +132,21 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 	{
 		case WM_CREATE:
 
-			m_hSerialComm = CreateFile(m_pszPortName, GENERIC_READ | GENERIC_WRITE, 0, NULL, OPEN_EXISTING, 0, NULL);
-			if (m_hSerialComm == INVALID_HANDLE_VALUE) 
-			{
-				MessageBox(hWnd,"Error Opening COM port","info",MB_OK);
-			}else
-			{
-				hThread = CreateThread(NULL,0,pollCOM,m_hSerialComm,0,&dwThreadId);
-			}
+			controller.OpenPort(m_pszPortName);
 
-			// Creating all the static child windows that hold the values of the data that is polled
-			// from the STM100 controller
-			hStatic[0] = CreateWindow("Static","",WS_CHILD | WS_VISIBLE,0,0,125,112,hWnd,(HMENU)IDC_STATIC1,GetModuleHandle(NULL),NULL);
-			hStatic[1] = CreateWindow("Static","",WS_CHILD | WS_VISIBLE,125,0,100,16,hWnd,(HMENU)IDC_STATIC2,GetModuleHandle(NULL),NULL);
-			hStatic[2] = CreateWindow("Static","",WS_CHILD | WS_VISIBLE,125,16,100,16,hWnd,(HMENU)IDC_STATIC3,GetModuleHandle(NULL),NULL);
-			hStatic[3] = CreateWindow("Static","",WS_CHILD | WS_VISIBLE,125,32,100,16,hWnd,(HMENU)IDC_STATIC4,GetModuleHandle(NULL),NULL);
-			hStatic[4] = CreateWindow("Static","",WS_CHILD | WS_VISIBLE,125,48,100,16,hWnd,(HMENU)IDC_STATIC5,GetModuleHandle(NULL),NULL);
-			hStatic[5] = CreateWindow("Static","",WS_CHILD | WS_VISIBLE,125,64,100,16,hWnd,(HMENU)IDC_STATIC6,GetModuleHandle(NULL),NULL);
-			hStatic[6] = CreateWindow("Static","",WS_CHILD | WS_VISIBLE,125,80,100,16,hWnd,(HMENU)IDC_STATIC7,GetModuleHandle(NULL),NULL);
-			hStatic[7] = CreateWindow("Static","",WS_CHILD | WS_VISIBLE,125,96,100,16,hWnd,(HMENU)IDC_STATIC8,GetModuleHandle(NULL),NULL);
-			SetWindowText(hStatic[0],TEXT("Rate:\nThickness:\nDensity:\nZ-Factor:\nRemaining Life:\nFrequency:\nTime:"));
+			/* Creating all the static child windows for the 
+			   data that is polled from the STM100 controller */
+			hStatic[0] = CreateWindowEx(NULL,"Static","",WS_CHILD | WS_VISIBLE,0,0,125,112,hWnd,(HMENU)IDC_STATIC1,GetModuleHandle(NULL),NULL);
+			hStatic[1] = CreateWindowEx(NULL,"Static","",WS_CHILD | WS_VISIBLE,125,0,100,16,hWnd,(HMENU)IDC_STATIC2,GetModuleHandle(NULL),NULL);
+			hStatic[2] = CreateWindowEx(NULL,"Static","",WS_CHILD | WS_VISIBLE,125,16,100,16,hWnd,(HMENU)IDC_STATIC3,GetModuleHandle(NULL),NULL);
+			hStatic[3] = CreateWindowEx(NULL,"Static","",WS_CHILD | WS_VISIBLE,125,32,100,16,hWnd,(HMENU)IDC_STATIC4,GetModuleHandle(NULL),NULL);
+			hStatic[4] = CreateWindowEx(NULL,"Static","",WS_CHILD | WS_VISIBLE,125,48,100,16,hWnd,(HMENU)IDC_STATIC5,GetModuleHandle(NULL),NULL);
+			hStatic[5] = CreateWindowEx(NULL,"Static","",WS_CHILD | WS_VISIBLE,125,64,100,16,hWnd,(HMENU)IDC_STATIC6,GetModuleHandle(NULL),NULL);
+			hStatic[6] = CreateWindowEx(NULL,"Static","",WS_CHILD | WS_VISIBLE,125,80,100,16,hWnd,(HMENU)IDC_STATIC7,GetModuleHandle(NULL),NULL);
+			hStatic[7] = CreateWindowEx(NULL,"Static","",WS_CHILD | WS_VISIBLE,125,96,100,16,hWnd,(HMENU)IDC_STATIC8,GetModuleHandle(NULL),NULL);
+			SetWindowText(hStatic[0],TEXT("Rate:\nAverage Rate:\nThickness:\nDensity:\nZ-Factor:\nRemaining Life:\nFrequency:\nTime:"));
 
+			//update timer for the displayed values
 			SetTimer(hWnd,2,500,NULL);
 
 			break;
@@ -171,6 +159,10 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 				case ID_SETTINGS_FILMPROPERTIES:
 					DialogBox(hInst, (LPCTSTR)IDD_FPROP, hWnd, (DLGPROC)FilmProp);
 					break;
+				case ID_SETTINGS_OPTIONS:
+					//OPTIONS CURRENTLY NOT SUPPORTED
+					//DialogBox(hInst, (LPCTSTR)IDD_OPTIONS, hWnd, (DLGPROC)Options);
+					break;
 				case IDM_ABOUT:
 				   DialogBox(hInst, (LPCTSTR)IDD_ABOUTBOX, hWnd, (DLGPROC)About);
 				   break;
@@ -182,41 +174,49 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 			}
 			break;
 		case WM_CTLCOLORSTATIC:
+			//setting the color of the static windows
 			SetBkMode((HDC)wParam,TRANSPARENT);
 			return (INT_PTR)(HBRUSH)GetStockObject(WHITE_BRUSH);
+			break;
 		case WM_PAINT:
 			hdc = BeginPaint(hWnd, &ps);
 			RECT rt;
 			GetClientRect(hWnd, &rt);
 
+			//nothing done here
 
 			EndPaint(hWnd, &ps);
 			break;
 		case WM_TIMER:
 
-			sprintf(szBuf,"%05.1f A/s",rate);
+			//update the displayed values
+
+			sprintf(szBuf,"%05.1f A/s",controller.GetRate());
 			SetWindowText(hStatic[1],szBuf);
 
-			sprintf(szBuf,"%05.3f KA",thickness/1000);
+			sprintf(szBuf,"%05.3f KA",controller.GetThickness()/1000);
 			SetWindowText(hStatic[2],szBuf);
 
-			sprintf(szBuf,"%06.3f g/cc",density);
+			sprintf(szBuf,"%06.3f g/cc",controller.GetDensity());
 			SetWindowText(hStatic[3],szBuf);
 
-			sprintf(szBuf,"%05.3f",zfactor);
+			sprintf(szBuf,"%05.3f",controller.GetZFactor());
 			SetWindowText(hStatic[4],szBuf);
 
-			sprintf(szBuf,"%04.1f%%",life);
+			sprintf(szBuf,"%04.1f%%",controller.GetLife());
 			SetWindowText(hStatic[5],szBuf);
 
-			sprintf(szBuf,"%d Hz",freq);
+			sprintf(szBuf,"%d Hz",controller.GetFreq());
 			SetWindowText(hStatic[6],szBuf);
 
-			sprintf(szBuf,"%02d:%02d",timemin,timesec);
+			tm current_time = controller.GetTime();
+			sprintf(szBuf,"%02d:%02d",current_time.tm_min,current_time.tm_sec);
 			SetWindowText(hStatic[7],szBuf);
 
 			break;
 		case WM_DESTROY:
+			//close communications before closing program
+			controller.ClosePort();
 			PostQuitMessage(0);
 			break;
 		default:
@@ -248,15 +248,16 @@ LRESULT CALLBACK About(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
 LRESULT CALLBACK FilmProp(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
 {
 	char szBuf[20];
+	float newdensity, newzfactor;
 
 	switch (message)
 	{
 		case WM_INITDIALOG:
 
-				sprintf(szBuf,"%05.2f",density);
+				sprintf(szBuf,"%05.2f",controller.GetDensity());
 				SetDlgItemText(hDlg,IDC_EDIT1,szBuf);
 
-				sprintf(szBuf,"%05.3f",zfactor);
+				sprintf(szBuf,"%05.3f",controller.GetZFactor());
 				SetDlgItemText(hDlg,IDC_EDIT2,szBuf);
 
 				return TRUE;
@@ -264,26 +265,41 @@ LRESULT CALLBACK FilmProp(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
 		case WM_COMMAND:
 			if (LOWORD(wParam) == IDOK){
 
+				//get density value from edit box
 				GetDlgItemText(hDlg,IDC_EDIT1,szBuf,6);
 				sscanf(szBuf,"%f",&newdensity);
+
+				//make sure density is reasonable value
 				if(newdensity >= 0.5 && newdensity <= 99.99){
 
-					GetDlgItemText(hDlg,IDC_EDIT2,szBuf,6);
-					sscanf(szBuf,"%f",&newzfactor);
-					if(newzfactor >= 0.1 && newzfactor <= 9.999){
-						setdensityready = true;
-						setzfactorready = true;
-						EndDialog(hDlg, LOWORD(wParam));
-					}else{
-						MessageBox(hDlg,"Invalid value for Z-Factor!","Error",MB_OK);
-						return TRUE;
-					}
+					//send the controller the new density value
+					controller.SetDensity(newdensity);
 
 				}else{
+
 					MessageBox(hDlg,"Invalid value for density!","Error",MB_OK);
 					return TRUE;
+
 				}
 
+				//get the Z-factor value from the edit box
+				GetDlgItemText(hDlg,IDC_EDIT2,szBuf,6);
+				sscanf(szBuf,"%f",&newzfactor);
+
+				//make sure Z-factor is a reasonable value
+				if(newzfactor >= 0.1 && newzfactor <= 9.999){
+
+					//send the controller the new Z-factor value
+					controller.SetZFactor(newzfactor);
+
+				}else{
+
+					MessageBox(hDlg,"Invalid value for Z-Factor!","Error",MB_OK);
+					return TRUE;
+
+				}
+
+				EndDialog(hDlg, LOWORD(wParam));
 				
 			}
 			if(LOWORD(wParam) == IDCANCEL) {
@@ -303,9 +319,10 @@ LRESULT CALLBACK CommSet(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
 	{
 		case WM_INITDIALOG:
 
-				SetDlgItemText(hDlg,IDC_EDIT1,TEXT("COM1"));
+			//set the edit box with the default com port
+			SetDlgItemText(hDlg,IDC_EDIT1,m_pszPortName);
 
-				return TRUE;
+			return TRUE;
 
 		case WM_COMMAND:
 			if (LOWORD(wParam) == IDOK){
@@ -324,469 +341,35 @@ LRESULT CALLBACK CommSet(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
     return FALSE;
 }
 
-//the function that polls the values from the STM100 controller over the serial COM port 
-DWORD WINAPI pollCOM(LPVOID lpParam)
+//callback for the dialog box that sets the options
+//CURRENTLY NOT SUPPRTED
+LRESULT CALLBACK Options(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
 {
-	HANDLE m_hSerialComm = (HANDLE)lpParam;
-	int i;
-	unsigned char checksum;
-	unsigned long dwNumberOfBytesSent;
-	unsigned long dwSize;
-	char pszBuf[50];
-	char szBuf[50];
-	unsigned long dwNumberOfBytesWritten;
-			
-			//First we must setup the communications
-			DCB dcbConfig;
 
-			if(GetCommState(m_hSerialComm, &dcbConfig))
-			{
-			    dcbConfig.BaudRate = 9600;
-			    dcbConfig.ByteSize = 8;
-			    dcbConfig.Parity = NOPARITY;
-			    dcbConfig.StopBits = ONESTOPBIT;
-			    dcbConfig.fBinary = TRUE;
-			    dcbConfig.fParity = TRUE;
-			}
+	switch (message)
+	{
+		case WM_INITDIALOG:
 
-			else
-			{
-			    MessageBox(hwnd,"Error getting COMM state","info",MB_OK);
-			}
+				SetDlgItemText(hDlg,IDC_NUM_SAMPLES,TEXT("5"));
 
-			if(!SetCommState(m_hSerialComm, &dcbConfig)) MessageBox(hwnd,"Error setting COMM state","info",MB_OK);
+				return TRUE;
 
-			COMMTIMEOUTS commTimeout;
+		case WM_COMMAND:
+			if (LOWORD(wParam) == IDOK){
+				char numberText[16];
 
-			if(GetCommTimeouts(m_hSerialComm, &commTimeout))
-			{
-			    commTimeout.ReadIntervalTimeout     = 50;
-			    commTimeout.ReadTotalTimeoutConstant     = 50;
-			    commTimeout.ReadTotalTimeoutMultiplier     = 50;
-			    commTimeout.WriteTotalTimeoutConstant     = 1000 * 5;
-			    commTimeout.WriteTotalTimeoutMultiplier = 1000 * 5;
-			}
+				GetDlgItemText(hDlg,IDC_NUM_SAMPLES,numberText,16);
+				//avg_samples = atoi(numberText);
 
-			else
-			{
-			    MessageBox(hwnd,"Error getting COMM timeouts","info",MB_OK);
-			}
+				EndDialog(hDlg, 1);
 
-			if(!SetCommTimeouts(m_hSerialComm, &commTimeout)) MessageBox(hwnd,"Error setting COMM timeouts","info",MB_OK);
-
-
-			DWORD dwEventMask;
-			DWORD dwIncommingReadSize;
-			while(1){
-
-				if(setdensityready){
-					dwNumberOfBytesSent = 0;
-
-					dwSize = 10;
-					sprintf(szBuf,"E=%05.2f",newdensity);
-					
-					checksum = 0;
-					for(i=0;i<7;i++){
-						checksum += szBuf[i];
-					}
-					sprintf(pszBuf,"%c%c%s%c",char(2),char(7),szBuf,checksum);
-
-					//Setting the density value set by user
-					if(WriteFile(m_hSerialComm, pszBuf, dwSize, 
-					               &dwNumberOfBytesWritten, NULL) != 0)
-					{
-					    if(dwNumberOfBytesWritten != dwSize) MessageBox(hwnd,"Error Writing byte code 2","info",MB_OK);
-					}
-
-					else
-					   MessageBox(hwnd,"Error Writing byte code 1","info",MB_OK);
-
-					//Then we received the acknowledgement
-					dwSize = 4;
-
-					if(!SetCommMask(m_hSerialComm, EV_RXCHAR)) MessageBox(hwnd,"Error Setting COMM mask","info",MB_OK);
-
-					if(WaitCommEvent(m_hSerialComm, &dwEventMask, NULL))
-					{
-			    
-
-					        if(ReadFile(m_hSerialComm, szBuf, dwSize, &dwIncommingReadSize, NULL) != 0)
-					       {
-
-					                szBuf[dwIncommingReadSize+1] = char(0);
-			      
-					        }
-
-					        else
-					            MessageBox(hwnd,"Error Reading byte code 2","info",MB_OK);
-					}
-
-					else
-					{
-					    MessageBox(hwnd,"Error Reading COMM","info",MB_OK);
-					}
-
-					setdensityready = false;
-				}
-
-				if(setzfactorready){
-					dwNumberOfBytesSent = 0;
-
-					dwSize = 10;
-					sprintf(szBuf,"F=%05.3f",newzfactor);
-					
-					checksum = 0;
-					for(i=0;i<7;i++){
-						checksum += szBuf[i];
-					}
-					sprintf(pszBuf,"%c%c%s%c",char(2),char(7),szBuf,checksum);
-
-					//Setting the density value set by user
-					if(WriteFile(m_hSerialComm, pszBuf, dwSize, 
-					               &dwNumberOfBytesWritten, NULL) != 0)
-					{
-					    if(dwNumberOfBytesWritten != dwSize) MessageBox(hwnd,"Error Writing byte code 2","info",MB_OK);
-					}
-
-					else
-					   MessageBox(hwnd,"Error Writing byte code 1","info",MB_OK);
-
-					//Then we received the acknowledgement
-					dwSize = 4;
-
-					if(!SetCommMask(m_hSerialComm, EV_RXCHAR)) MessageBox(hwnd,"Error Setting COMM mask","info",MB_OK);
-
-					if(WaitCommEvent(m_hSerialComm, &dwEventMask, NULL))
-					{
-			    
-
-					        if(ReadFile(m_hSerialComm, szBuf, dwSize, &dwIncommingReadSize, NULL) != 0)
-					       {
-
-					                szBuf[dwIncommingReadSize+1] = char(0);
-			      
-					        }
-
-					        else
-					            MessageBox(hwnd,"Error Reading byte code 2","info",MB_OK);
-					}
-
-					else
-					{
-					    MessageBox(hwnd,"Error Reading COMM","info",MB_OK);
-					}
-
-					setzfactorready = false;
-				}
-
-
-			dwNumberOfBytesSent = 0;
-
-			dwSize = 4;
-			sprintf(pszBuf,"%c%cTT",char(2),char(1));
-			//Getting the process variable which is the current rate
-			//Now we send the first message to the controller
-			if(WriteFile(m_hSerialComm, pszBuf, dwSize, 
-                           &dwNumberOfBytesWritten, NULL) != 0)
-			{
-			    if(dwNumberOfBytesWritten != dwSize) MessageBox(hwnd,"Error Writing byte code 2","info",MB_OK);
-			}
-
-			else
-			    MessageBox(hwnd,"Error Writing byte code 1","info",MB_OK);
-
-
-			//Then we received the acknowledgement
-			dwSize = 10;
-
-			if(!SetCommMask(m_hSerialComm, EV_RXCHAR)) MessageBox(hwnd,"Error Setting COMM mask","info",MB_OK);
-
-			if(WaitCommEvent(m_hSerialComm, &dwEventMask, NULL))
-			{
-			    
-
-			        if(ReadFile(m_hSerialComm, szBuf, dwSize, &dwIncommingReadSize, NULL) != 0)
-			       {
-
-			                szBuf[dwIncommingReadSize+1] = char(0);
-			      
-			        }
-
-			        else
-			            MessageBox(hwnd,"Error Reading byte code 2","info",MB_OK);
-			}
-
-			else
-			{
-			    MessageBox(hwnd,"Error Reading COMM","info",MB_OK);
-			}
-
-
-			sscanf(szBuf,"%*c%*c%*c%f%*c",&rate);
-
-			dwNumberOfBytesSent = 0;
-
-			dwSize = 4;
-			sprintf(pszBuf,"%c%cSS",char(2),char(1));
-			//Getting the process variable which is the current thickness
-			//Now we send the first message to the controller
-			if(WriteFile(m_hSerialComm, pszBuf, dwSize, 
-                           &dwNumberOfBytesWritten, NULL) != 0)
-			{
-			    if(dwNumberOfBytesWritten != dwSize) MessageBox(hwnd,"Error Writing byte code 2","info",MB_OK);
-			}
-
-			else
-			    MessageBox(hwnd,"Error Writing byte code 1","info",MB_OK);
-
-
-			//Then we received the acknowledgement
-			dwSize = 12;
-
-			if(!SetCommMask(m_hSerialComm, EV_RXCHAR)) MessageBox(hwnd,"Error Setting COMM mask","info",MB_OK);
-
-			if(WaitCommEvent(m_hSerialComm, &dwEventMask, NULL))
-			{
-			    
-
-			        if(ReadFile(m_hSerialComm, szBuf, dwSize, &dwIncommingReadSize, NULL) != 0)
-			       {
-
-			                szBuf[dwIncommingReadSize+1] = char(0);
-			      
-			        }
-
-			        else
-			            MessageBox(hwnd,"Error Reading byte code 2","info",MB_OK);
-			}
-
-			else
-			{
-			    MessageBox(hwnd,"Error Reading COMM","info",MB_OK);
-			}
-
-
-			sscanf(szBuf,"%*c%*c%*c%f%*c",&thickness);
-
-			dwNumberOfBytesSent = 0;
-
-			dwSize = 4;
-			sprintf(pszBuf,"%c%cVV",char(2),char(1));
-			//Getting the process variable which is the current thickness
-			//Now we send the first message to the controller
-			if(WriteFile(m_hSerialComm, pszBuf, dwSize, 
-                           &dwNumberOfBytesWritten, NULL) != 0)
-			{
-			    if(dwNumberOfBytesWritten != dwSize) MessageBox(hwnd,"Error Writing byte code 2","info",MB_OK);
-			}
-
-			else
-			    MessageBox(hwnd,"Error Writing byte code 1","info",MB_OK);
-
-
-			//Then we received the acknowledgement
-			dwSize = 10;
-
-			if(!SetCommMask(m_hSerialComm, EV_RXCHAR)) MessageBox(hwnd,"Error Setting COMM mask","info",MB_OK);
-
-			if(WaitCommEvent(m_hSerialComm, &dwEventMask, NULL))
-			{
-			    
-
-			        if(ReadFile(m_hSerialComm, szBuf, dwSize, &dwIncommingReadSize, NULL) != 0)
-			       {
-
-			                szBuf[dwIncommingReadSize+1] = char(0);
-			      
-			        }
-
-			        else
-			            MessageBox(hwnd,"Error Reading byte code 2","info",MB_OK);
-			}
-
-			else
-			{
-			    MessageBox(hwnd,"Error Reading COMM","info",MB_OK);
-			}
-
-
-			sscanf(szBuf,"%*c%*c%*c%f%*c",&life);
-
-			dwNumberOfBytesSent = 0;
-
-			dwSize = 4;
-			sprintf(pszBuf,"%c%cUU",char(2),char(1));
-			//Getting the process variable which is the current thickness
-			//Now we send the first message to the controller
-			if(WriteFile(m_hSerialComm, pszBuf, dwSize, 
-                           &dwNumberOfBytesWritten, NULL) != 0)
-			{
-			    if(dwNumberOfBytesWritten != dwSize) MessageBox(hwnd,"Error Writing byte code 2","info",MB_OK);
-			}
-
-			else
-			    MessageBox(hwnd,"Error Writing byte code 1","info",MB_OK);
-
-
-			//Then we received the acknowledgement
-			dwSize = 11;
-
-			if(!SetCommMask(m_hSerialComm, EV_RXCHAR)) MessageBox(hwnd,"Error Setting COMM mask","info",MB_OK);
-
-			if(WaitCommEvent(m_hSerialComm, &dwEventMask, NULL))
-			{
-			    
-
-			        if(ReadFile(m_hSerialComm, szBuf, dwSize, &dwIncommingReadSize, NULL) != 0)
-			       {
-
-			                szBuf[dwIncommingReadSize+1] = char(0);
-			      
-			        }
-
-			        else
-			            MessageBox(hwnd,"Error Reading byte code 2","info",MB_OK);
-			}
-
-			else
-			{
-			    MessageBox(hwnd,"Error Reading COMM","info",MB_OK);
-			}
-
-
-			sscanf(szBuf,"%*c%*c%*c%d%*c",&freq);
-
-			dwNumberOfBytesSent = 0;
-
-			dwSize = 4;
-			sprintf(pszBuf,"%c%cWW",char(2),char(1));
-			//Getting the process variable which is the current thickness
-			//Now we send the first message to the controller
-			if(WriteFile(m_hSerialComm, pszBuf, dwSize, 
-                           &dwNumberOfBytesWritten, NULL) != 0)
-			{
-			    if(dwNumberOfBytesWritten != dwSize) MessageBox(hwnd,"Error Writing byte code 2","info",MB_OK);
-			}
-
-			else
-			    MessageBox(hwnd,"Error Writing byte code 1","info",MB_OK);
-
-
-			//Then we received the acknowledgement
-			dwSize = 10;
-
-			if(!SetCommMask(m_hSerialComm, EV_RXCHAR)) MessageBox(hwnd,"Error Setting COMM mask","info",MB_OK);
-
-			if(WaitCommEvent(m_hSerialComm, &dwEventMask, NULL))
-			{
-			    
-
-			        if(ReadFile(m_hSerialComm, szBuf, dwSize, &dwIncommingReadSize, NULL) != 0)
-			       {
-
-			                szBuf[dwIncommingReadSize+1] = char(0);
-			      
-			        }
-
-			        else
-			            MessageBox(hwnd,"Error Reading byte code 2","info",MB_OK);
-			}
-
-			else
-			{
-			    MessageBox(hwnd,"Error Reading COMM","info",MB_OK);
-			}
-
-
-			sscanf(szBuf,"%*c%*c%*c%*c%d%*c%d%*c",&timemin,&timesec);
-
-			dwNumberOfBytesSent = 0;
-
-			dwSize = 5;
-			sprintf(pszBuf,"%c%cE?%c",char(2),char(2),char(69+63));
-			//Getting the process variable which is the current thickness
-			//Now we send the first message to the controller
-			if(WriteFile(m_hSerialComm, pszBuf, dwSize, 
-                           &dwNumberOfBytesWritten, NULL) != 0)
-			{
-			    if(dwNumberOfBytesWritten != dwSize) MessageBox(hwnd,"Error Writing byte code 2","info",MB_OK);
-			}
-
-			else
-			    MessageBox(hwnd,"Error Writing byte code 1","info",MB_OK);
-
-
-			//Then we received the acknowledgement
-			dwSize = 10;
-
-			if(!SetCommMask(m_hSerialComm, EV_RXCHAR)) MessageBox(hwnd,"Error Setting COMM mask","info",MB_OK);
-
-			if(WaitCommEvent(m_hSerialComm, &dwEventMask, NULL))
-			{
-			    
-
-			        if(ReadFile(m_hSerialComm, szBuf, dwSize, &dwIncommingReadSize, NULL) != 0)
-			       {
-
-			                szBuf[dwIncommingReadSize+1] = char(0);
-			      
-			        }
-
-			        else
-			            MessageBox(hwnd,"Error Reading byte code 2","info",MB_OK);
-			}
-
-			else
-			{
-			    MessageBox(hwnd,"Error Reading COMM","info",MB_OK);
-			}
-
-			sscanf(szBuf,"%*c%*c%*c%f%*c",&density);
-
-			dwNumberOfBytesSent = 0;
-
-			dwSize = 5;
-			sprintf(pszBuf,"%c%cF?%c",char(2),char(2),char(70+63));
-			//Getting the process variable which is the current thickness
-			//Now we send the first message to the controller
-			if(WriteFile(m_hSerialComm, pszBuf, dwSize, 
-                           &dwNumberOfBytesWritten, NULL) != 0)
-			{
-			    if(dwNumberOfBytesWritten != dwSize) MessageBox(hwnd,"Error Writing byte code 2","info",MB_OK);
-			}
-
-			else
-			    MessageBox(hwnd,"Error Writing byte code 1","info",MB_OK);
-
-
-			//Then we received the acknowledgement
-			dwSize = 9;
-
-			if(!SetCommMask(m_hSerialComm, EV_RXCHAR)) MessageBox(hwnd,"Error Setting COMM mask","info",MB_OK);
-
-			if(WaitCommEvent(m_hSerialComm, &dwEventMask, NULL))
-			{
-			    
-
-			        if(ReadFile(m_hSerialComm, szBuf, dwSize, &dwIncommingReadSize, NULL) != 0)
-			       {
-
-			                szBuf[dwIncommingReadSize+1] = char(0);
-			      
-			        }
-
-			        else
-			            MessageBox(hwnd,"Error Reading byte code 2","info",MB_OK);
-			}
-
-			else
-			{
-			    MessageBox(hwnd,"Error Reading COMM","info",MB_OK);
-			}
-
-			sscanf(szBuf,"%*c%*c%*c%f%*c",&zfactor);
 
 			}
-
-			return 0;
+			if(LOWORD(wParam) == IDCANCEL) {
+				EndDialog(hDlg, 0);
+				return TRUE;
+			}
+			break;
+	}
+    return FALSE;
 }

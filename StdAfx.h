@@ -24,6 +24,7 @@
 #include <tchar.h>
 
 // Local Header Files
+#include "stm100.h"
 
 // TODO: reference additional headers your program requires here
 
