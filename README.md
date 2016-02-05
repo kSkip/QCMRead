@@ -4,7 +4,7 @@ I wrote this program because the display on the STM100 film deposition controlle
 but the controller worked fine otherwise. So I wrote this code to see the numbers 
 on the display and set certain values in the controller. After writing it, I 
 decided that it was useful for others and should be improved upon. This could be especially 
-useful for automation purposes as the controller can operate deposition shutters. I plan on future version supporting all the features of these controllers adn related models as well.
+useful for automation purposes as the controller can operate deposition shutters. I plan on future version supporting all the features of these controllers and related models as well.
 
 ## Compiling
 
@@ -27,7 +27,7 @@ After you enter this information,
 the main window will open
 
 #### Measuring 
-You will see several values being displayed. They are updated every 500ms. The thickness is an accumulated deposition on the quartz crystal in the vacuum system. This is an accumulation over the time indicated next to time. For some reason the time counts down from 60:00 mins:sec to 00:00 and then back up. This is not a software bug as the controller also reads this value. In any case, pressing the "zero" button on hte controllers zeros the time and thickness. 
+You will see several values being displayed. They are updated every 500ms. The thickness is an accumulated deposition on the quartz crystal in the vacuum system. This is an accumulation over the time indicated next to time. For some reason the time counts down from 60:00 mins:sec to 00:00 and then back up. This is not a software bug as the controller also reads this value. In any case, pressing the "zero" button on the controllers zeros the time and thickness. 
 
 You should see:
 
