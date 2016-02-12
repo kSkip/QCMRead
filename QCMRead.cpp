@@ -13,6 +13,8 @@
 #define IDC_STATIC8 207
 #define IDC_STATIC9 208
 
+#define IDC_BUTTON 300
+
 // Global Variables:
 HINSTANCE hInst;								// current instance
 TCHAR szTitle[MAX_LOADSTRING];					// The title bar text
@@ -25,6 +27,7 @@ stm100 controller; //The stm100 deposition controller object
 //handles to the main window and the static child windows
 HWND hwnd;
 HWND hStatic[9];
+HWND hButton;
 
 // Foward declarations of functions included in this code module:
 ATOM				MyRegisterClass(HINSTANCE hInstance);
@@ -104,7 +107,7 @@ BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
    }
 
    hWnd = CreateWindow(szWindowClass, szTitle, WS_OVERLAPPEDWINDOW^WS_THICKFRAME,
-      100, 100, 225, 175, NULL, NULL, hInstance, NULL);
+      100, 100, 225, 216, NULL, NULL, hInstance, NULL);
 
    hwnd = hWnd;
 
@@ -136,7 +139,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 
 			/* Creating all the static child windows for the 
 			   data that is polled from the STM100 controller */
-			hStatic[0] = CreateWindowEx(NULL,"Static","",WS_CHILD | WS_VISIBLE,0,0,125,112,hWnd,(HMENU)IDC_STATIC1,GetModuleHandle(NULL),NULL);
+			hStatic[0] = CreateWindowEx(NULL,"Static","",WS_CHILD | WS_VISIBLE,0,0,125,128,hWnd,(HMENU)IDC_STATIC1,GetModuleHandle(NULL),NULL);
 			hStatic[1] = CreateWindowEx(NULL,"Static","",WS_CHILD | WS_VISIBLE,125,0,100,16,hWnd,(HMENU)IDC_STATIC2,GetModuleHandle(NULL),NULL);
 			hStatic[2] = CreateWindowEx(NULL,"Static","",WS_CHILD | WS_VISIBLE,125,16,100,16,hWnd,(HMENU)IDC_STATIC3,GetModuleHandle(NULL),NULL);
 			hStatic[3] = CreateWindowEx(NULL,"Static","",WS_CHILD | WS_VISIBLE,125,32,100,16,hWnd,(HMENU)IDC_STATIC4,GetModuleHandle(NULL),NULL);
@@ -144,7 +147,10 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 			hStatic[5] = CreateWindowEx(NULL,"Static","",WS_CHILD | WS_VISIBLE,125,64,100,16,hWnd,(HMENU)IDC_STATIC6,GetModuleHandle(NULL),NULL);
 			hStatic[6] = CreateWindowEx(NULL,"Static","",WS_CHILD | WS_VISIBLE,125,80,100,16,hWnd,(HMENU)IDC_STATIC7,GetModuleHandle(NULL),NULL);
 			hStatic[7] = CreateWindowEx(NULL,"Static","",WS_CHILD | WS_VISIBLE,125,96,100,16,hWnd,(HMENU)IDC_STATIC8,GetModuleHandle(NULL),NULL);
-			SetWindowText(hStatic[0],TEXT("Rate:\nThickness:\nDensity:\nZ-Factor:\nRemaining Life:\nFrequency:\nTime:"));
+			hStatic[8] = CreateWindowEx(NULL,"Static","",WS_CHILD | WS_VISIBLE,125,112,100,16,hWnd,(HMENU)IDC_STATIC9,GetModuleHandle(NULL),NULL);
+			SetWindowText(hStatic[0],TEXT("Rate:\nAverage Rate:\nThickness:\nDensity:\nZ-Factor:\nRemaining Life:\nFrequency:\nTime:"));
+
+			hButton = CreateWindowEx(NULL,"Button","Zero Thickness",WS_CHILD | WS_VISIBLE,5,130,210,30,hWnd,(HMENU)IDC_BUTTON,GetModuleHandle(NULL),NULL);
 
 			//update timer for the displayed values
 			SetTimer(hWnd,2,500,NULL);
@@ -156,6 +162,9 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 			// Parse the menu selections:
 			switch (wmId)
 			{
+				case IDC_BUTTON:
+					controller.ZeroThicknessTimer();
+					break;
 				case ID_SETTINGS_FILMPROPERTIES:
 					DialogBox(hInst, (LPCTSTR)IDD_FPROP, hWnd, (DLGPROC)FilmProp);
 					break;
@@ -194,24 +203,27 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 			sprintf(szBuf,"%05.1f A/s",controller.GetRate());
 			SetWindowText(hStatic[1],szBuf);
 
-			sprintf(szBuf,"%05.3f KA",controller.GetThickness()/1000);
+			tm current_time = controller.GetTime();
+			sprintf(szBuf,"%06f A/s",controller.GetThickness()/(current_time.tm_min*60.0f+current_time.tm_sec));
 			SetWindowText(hStatic[2],szBuf);
 
-			sprintf(szBuf,"%06.3f g/cc",controller.GetDensity());
+			sprintf(szBuf,"%05.3f KA",controller.GetThickness()/1000);
 			SetWindowText(hStatic[3],szBuf);
 
-			sprintf(szBuf,"%05.3f",controller.GetZFactor());
+			sprintf(szBuf,"%06.3f g/cc",controller.GetDensity());
 			SetWindowText(hStatic[4],szBuf);
 
-			sprintf(szBuf,"%04.1f%%",controller.GetLife());
+			sprintf(szBuf,"%05.3f",controller.GetZFactor());
 			SetWindowText(hStatic[5],szBuf);
 
-			sprintf(szBuf,"%d Hz",controller.GetFreq());
+			sprintf(szBuf,"%04.1f%%",controller.GetLife());
 			SetWindowText(hStatic[6],szBuf);
 
-			tm current_time = controller.GetTime();
-			sprintf(szBuf,"%02d:%02d",current_time.tm_min,current_time.tm_sec);
+			sprintf(szBuf,"%d Hz",controller.GetFreq());
 			SetWindowText(hStatic[7],szBuf);
+
+			sprintf(szBuf,"%02d:%02d",current_time.tm_min,current_time.tm_sec);
+			SetWindowText(hStatic[8],szBuf);
 
 			break;
 		case WM_DESTROY:

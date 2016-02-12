@@ -26,6 +26,8 @@ class stm100{
 		void SetDensity(float new_density);
 		void SetZFactor(float new_zfactor);
 
+		void ZeroThicknessTimer();
+
 		//open/close functions for the serial port
 		bool OpenPort(const char* port);
 		void ClosePort();
@@ -43,6 +45,8 @@ class stm100{
 
 		bool setdensityready;
 		bool setzfactorready;
+
+		bool zerothicknesstimer;
 
 		//functions and members that handle communications
 		HANDLE m_hThread;
@@ -66,6 +70,7 @@ class stm100{
 
 		static void writeDensity(HANDLE hSerialComm, float density);
 		static void writeZFactor(HANDLE hSerialComm, float zfactor);
+		static void writeZeroThicknessTimer(HANDLE hSerialComm);
 
 };
 

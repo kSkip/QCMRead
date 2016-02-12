@@ -5,6 +5,7 @@ stm100::stm100(){
 
 	setdensityready = false;
 	setzfactorready = false;
+	zerothicknesstimer = false;
 
 }
 
@@ -300,6 +301,23 @@ void stm100::writeZFactor(HANDLE hSerialComm, float zfactor){
 
 }
 
+void stm100::writeZeroThicknessTimer(HANDLE hSerialComm){
+
+	char pszBuf[16];
+
+	//message to zero thicnkess and timer "<STX><length>B<checksum>"
+	sprintf(pszBuf,"%c%cBB",char(2),char(1));
+
+	//Send the message to the controller
+	writeCom(pszBuf,4,hSerialComm);
+
+	//Receive the acknowledgement
+	readCom(pszBuf,4,hSerialComm);
+
+	//for now do nothing with the response
+
+}
+
 void stm100::SetDensity(float new_density){
 
 	//flag density for change
@@ -313,6 +331,13 @@ void stm100::SetZFactor(float new_zfactor){
 	//flag z-factor for change
 	m_newzfactor = new_zfactor;
 	setzfactorready = true;
+
+}
+
+void stm100::ZeroThicknessTimer(){
+
+	//flag the timer and thickness to be zeroed
+	zerothicknesstimer = true;
 
 }
 
@@ -391,6 +416,13 @@ DWORD WINAPI stm100::pollCOM(LPVOID lpParam)
 
 			writeZFactor(hSerialComm,thisObject->m_newzfactor);
 			thisObject->setzfactorready = false;
+
+		}
+
+		if(thisObject->zerothicknesstimer){ //if flagged for zeroing send the message
+
+			writeZeroThicknessTimer(hSerialComm);
+			thisObject->zerothicknesstimer = false;
 
 		}
 
